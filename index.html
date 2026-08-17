@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Activation Circuit</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#12141C">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Morning Circuit">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12141C;
+    --surface:#1B1F2C;
+    --surface-2:#232838;
+    --line:#2C3244;
+    --amber:#E3A857;
+    --sage:#7FA88C;
+    --coral:#D9765A;
+    --text:#EDEFF3;
+    --muted:#8B93A7;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif;}
+  body{padding:0 0 80px 0;}
+  .wrap{max-width:760px; margin:0 auto; padding:40px 20px;}
+
+  .eyebrow{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber);}
+  h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(28px,5vw,42px); line-height:1.05; margin:8px 0 18px; letter-spacing:-0.01em;}
+  .lede{color:var(--muted); font-size:15.5px; line-height:1.6; max-width:60ch;}
+  .lede b{color:var(--text); font-weight:600;}
+
+  .why{margin-top:28px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px;}
+  .why h2{font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600; margin-bottom:10px;}
+  .why p{color:var(--muted); font-size:14.5px; line-height:1.65; margin-bottom:10px;}
+  .why p:last-child{margin-bottom:0;}
+  .why .tag{color:var(--coral); font-weight:600;}
+
+  /* --- Timer --- */
+  .timer-card{margin-top:32px; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:28px 24px; text-align:center; position:relative;}
+  .ring-wrap{position:relative; width:220px; height:220px; margin:6px auto 18px;}
+  svg.ring{transform:rotate(-90deg); width:220px; height:220px;}
+  .ring-bg{fill:none; stroke:var(--line); stroke-width:10;}
+  .ring-fg{fill:none; stroke:var(--amber); stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset .25s linear, stroke .3s;}
+  .ring-fg.rest{stroke:var(--sage);}
+  .ring-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .ring-count{font-family:'JetBrains Mono',monospace; font-size:44px; font-weight:700;}
+  .ring-label{font-size:13px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.08em;}
+  .ring-icon{width:34px; height:34px; color:var(--amber); margin-bottom:6px;}
+
+  .up-next{font-size:13px; color:var(--muted); margin-bottom:18px;}
+  .up-next b{color:var(--text);}
+
+  .controls{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  button{font-family:'Inter',sans-serif; font-weight:600; font-size:14px; border:none; border-radius:10px; padding:11px 20px; cursor:pointer; transition:opacity .15s, transform .1s;}
+  button:active{transform:scale(.97);}
+  .btn-primary{background:var(--amber); color:#1B1408;}
+  .btn-secondary{background:var(--surface-2); color:var(--text); border:1px solid var(--line);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+
+  .rounds-row{display:flex; align-items:center; justify-content:center; gap:10px; margin:18px 0 4px; font-size:13px; color:var(--muted);}
+  .rounds-row .stepper{display:flex; align-items:center; gap:8px; background:var(--surface-2); border-radius:10px; padding:4px 10px;}
+  .rounds-row button.mini{background:transparent; color:var(--text); font-size:16px; padding:2px 8px;}
+  .rounds-row .rn{font-family:'JetBrains Mono',monospace; color:var(--text); font-weight:700; min-width:14px; text-align:center;}
+
+  /* --- Progress dots --- */
+  .progress-dots{display:flex; gap:6px; justify-content:center; margin-top:20px; flex-wrap:wrap;}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--line);}
+  .dot.done{background:var(--sage);}
+  .dot.active{background:var(--amber);}
+
+  /* --- Streak --- */
+  .streak-card{margin-top:18px; display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 20px; gap:16px; flex-wrap:wrap;}
+  .streak-num{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; color:var(--amber);}
+  .streak-label{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;}
+  .week-strip{display:flex; gap:6px;}
+  .day-chip{width:26px; height:26px; border-radius:7px; background:var(--surface-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted);}
+  .day-chip.hit{background:var(--sage); color:#0F1712; border-color:var(--sage); font-weight:700;}
+
+  /* --- Exercise table --- */
+  .table-head{margin-top:40px; display:flex; align-items:baseline; justify-content:space-between;}
+  h2.section{font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px;}
+  .exercise-list{margin-top:16px; display:flex; flex-direction:column; gap:10px;}
+  .ex-row{display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; transition:border-color .2s, background .2s;}
+  .ex-row.current{border-color:var(--amber); background:var(--surface-2);}
+  .ex-num{font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:13px; width:18px; flex-shrink:0;}
+  .ex-icon{width:38px; height:38px; color:var(--amber); flex-shrink:0;}
+  .ex-body{flex:1; min-width:0;}
+  .ex-name{font-weight:600; font-size:15px;}
+  .ex-purpose{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .ex-dur{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); background:var(--surface-2); border-radius:8px; padding:5px 10px; flex-shrink:0;}
+  .backfriendly{display:inline-block; margin-left:6px; font-size:10px; color:var(--coral); border:1px solid var(--coral); border-radius:6px; padding:1px 5px; vertical-align:middle;}
+
+  footer{margin-top:36px; font-size:12.5px; color:var(--muted); text-align:center; line-height:1.6;}
+  .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Before weights · Before the day</div>
+  <h1>Morning Activation<br>Circuit</h1>
+  <p class="lede">Eight moves, one loop. <b>Mobility → cardio → push → squat → hinge → anti-rotation → anti-extension.</b> Built to wake the whole system up without taxing it — this isn't your training session, it's what makes the training session (and the rest of your day) go better.</p>
+
+  <div class="why">
+    <h2>Why this order, why these moves</h2>
+    <p>Cold joints going straight into fast movement is where niggles start — so it opens with <b>cat-cow</b> to unlock a stiff-from-sleeping spine, then <b>high knees</b> and <b>mountain climbers</b> to actually raise your heart rate and prime the nervous system.</p>
+    <p>The middle covers the three patterns a body needs daily: a <b>push</b> (press-ups), a <b>squat</b>, and a <b>hip hinge</b> (glute bridge) — most bodyweight routines skip the hinge entirely, which quietly under-trains the glutes and hamstrings that should be doing the work your lower back gets stuck compensating for.</p>
+    <p><span class="tag">Lower-back conscious:</span> <b>bird-dog</b> and <b>glute bridge</b> are in here specifically for that — bird-dog builds anti-rotation control and glute activation without any spinal loading, and the bridge strengthens the posterior chain that protects the back during everything else you do. Plank finishes it off with static anti-extension core, the one thing your original list already had right.</p>
+  </div>
+
+  <!-- TIMER -->
+  <div class="timer-card">
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="98"></circle>
+        <circle id="ringFg" class="ring-fg" cx="110" cy="110" r="98" stroke-dasharray="615.75" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="ring-center">
+        <div id="ringIcon" class="ring-icon"></div>
+        <div class="ring-count" id="ringCount">Ready</div>
+        <div class="ring-label" id="ringLabel">Round 1 of 1</div>
+      </div>
+    </div>
+
+    <div class="up-next" id="upNext">Tap Start when you're up. First move: <b>Cat-Cow</b></div>
+
+    <div class="controls">
+      <button class="btn-primary" id="btnStart">Start</button>
+      <button class="btn-secondary" id="btnPause" disabled>Pause</button>
+      <button class="btn-secondary" id="btnSkip" disabled>Skip</button>
+      <button class="btn-ghost" id="btnReset">Reset</button>
+    </div>
+
+    <div class="rounds-row">
+      <span>Rounds</span>
+      <div class="stepper">
+        <button class="mini" id="roundsMinus">–</button>
+        <span class="rn" id="roundsVal">1</span>
+        <button class="mini" id="roundsPlus">+</button>
+      </div>
+    </div>
+
+    <div class="progress-dots" id="progressDots"></div>
+  </div>
+
+  <!-- STREAK -->
+  <div class="streak-card">
+    <div>
+      <div class="streak-num" id="streakNum">–</div>
+      <div class="streak-label">Day streak</div>
+    </div>
+    <div class="week-strip" id="weekStrip"></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-head">
+    <h2 class="section">The circuit</h2>
+  </div>
+  <div class="exercise-list" id="exerciseList"></div>
+
+  <footer>
+    Timer runs entirely in this tab — keep it open while you move. Completing a full circuit logs today automatically.
+  </footer>
+</div>
+
+<script>
+/* ---------- Exercise data ---------- */
+const EXERCISES = [
+  { name:"Cat-Cow", purpose:"Spinal mobility, wakes up a stiff back", dur:30, reps:"10 slow reps", backFriendly:true,
+    icon: `<path d="M14 40 Q32 20 50 40" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="12" cy="40" r="4" fill="currentColor"/><circle cx="52" cy="40" r="4" fill="currentColor"/><path d="M20 38 L18 48 M44 38 L46 48" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+  { name:"High Knees", purpose:"Raises heart rate, coordination", dur:30, reps:"30 sec", backFriendly:false,
+    icon: `<circle cx="32" cy="10" r="5" fill="currentColor"/><path d="M32 15 L32 32 L20 24 M32 32 L40 50" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M32 32 L24 16" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+  { name:"Mountain Climbers", purpose:"Core + hip flexors, cardio", dur:30, reps:"30 sec", backFriendly:false,
+    icon: `<circle cx="14" cy="16" r="5" fill="currentColor"/><path d="M14 21 L46 44" stroke="currentColor" stroke-width="3"/><path d="M46 44 L58 44 M46 44 L38 30" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M20 26 L8 40" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+  { name:"Press-Ups", purpose:"Chest, shoulders, triceps, core", dur:30, reps:"10 reps", backFriendly:false,
+    icon: `<circle cx="12" cy="22" r="5" fill="currentColor"/><path d="M12 27 L50 40 M18 30 L10 46 M30 33 L26 48" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M50 40 L58 46" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+  { name:"Squats", purpose:"Knee-dominant lower body strength", dur:40, reps:"15 reps", backFriendly:false,
+    icon: `<circle cx="32" cy="10" r="5" fill="currentColor"/><path d="M32 15 L32 30 L20 38 M32 30 L44 38" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M20 38 L20 50 M44 38 L44 50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+  { name:"Glute Bridges", purpose:"Hip hinge — glutes & hamstrings, protects lower back", dur:40, reps:"15 reps", backFriendly:true,
+    icon: `<circle cx="10" cy="38" r="5" fill="currentColor"/><path d="M10 43 L26 43 L40 24 L54 43" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>` },
+  { name:"Bird-Dog", purpose:"Anti-rotation core, spares the spine", dur:40, reps:"8 per side", backFriendly:true,
+    icon: `<circle cx="12" cy="30" r="5" fill="currentColor"/><path d="M12 35 L44 40" stroke="currentColor" stroke-width="3"/><path d="M44 40 L56 32 M18 34 L26 48 M28 37 L20 22" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>` },
+  { name:"Plank", purpose:"Static anti-extension core", dur:45, reps:"45 sec hold", backFriendly:false,
+    icon: `<circle cx="10" cy="24" r="5" fill="currentColor"/><path d="M10 29 L54 42" stroke="currentColor" stroke-width="3"/><path d="M14 30 L8 44 M40 36 L44 48" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>` },
+];
+const TRANSITION = 8; // seconds between exercises
+
+/* ---------- Render exercise list ---------- */
+const listEl = document.getElementById('exerciseList');
+EXERCISES.forEach((ex, i) => {
+  const row = document.createElement('div');
+  row.className = 'ex-row';
+  row.id = 'exrow-' + i;
+  row.innerHTML = `
+    <div class="ex-num">${String(i+1).padStart(2,'0')}</div>
+    <svg class="ex-icon" viewBox="0 0 64 64">${ex.icon}</svg>
+    <div class="ex-body">
+      <div class="ex-name">${ex.name}${ex.backFriendly ? '<span class="backfriendly">back</span>' : ''}</div>
+      <div class="ex-purpose">${ex.purpose}</div>
+    </div>
+    <div class="ex-dur">${ex.reps}</div>
+  `;
+  listEl.appendChild(row);
+});
+
+/* ---------- Progress dots ---------- */
+const dotsEl = document.getElementById('progressDots');
+function renderDots(currentIdx, totalRounds, currentRound){
+  dotsEl.innerHTML = '';
+  for(let r=0; r<totalRounds; r++){
+    for(let i=0; i<EXERCISES.length; i++){
+      const d = document.createElement('div');
+      const flatIdx = r*EXERCISES.length + i;
+      d.className = 'dot';
+      if (flatIdx < currentIdx) d.className += ' done';
+      if (flatIdx === currentIdx) d.className += ' active';
+      dotsEl.appendChild(d);
+    }
+  }
+}
+
+/* ---------- Rounds stepper ---------- */
+let rounds = 1;
+const roundsVal = document.getElementById('roundsVal');
+document.getElementById('roundsMinus').onclick = () => { if(rounds>1 && !running){ rounds--; roundsVal.textContent = rounds; renderDots(0, rounds, 1);} };
+document.getElementById('roundsPlus').onclick = () => { if(rounds<3 && !running){ rounds++; roundsVal.textContent = rounds; renderDots(0, rounds, 1);} };
+
+/* ---------- Timer engine ---------- */
+const ringFg = document.getElementById('ringFg');
+const ringCount = document.getElementById('ringCount');
+const ringLabel = document.getElementById('ringLabel');
+const ringIcon = document.getElementById('ringIcon');
+const upNext = document.getElementById('upNext');
+const btnStart = document.getElementById('btnStart');
+const btnPause = document.getElementById('btnPause');
+const btnSkip = document.getElementById('btnSkip');
+const btnReset = document.getElementById('btnReset');
+const CIRC = 615.75;
+
+let running = false;
+let paused = false;
+let sequence = []; // flat list of {type:'ex'|'rest', idx, dur}
+let seqPos = 0;
+let secLeft = 0;
+let intervalId = null;
+let audioCtx = null;
+
+function buildSequence(){
+  sequence = [];
+  for(let r=0; r<rounds; r++){
+    EXERCISES.forEach((ex, i) => {
+      sequence.push({ type:'ex', idx:i, dur:ex.dur, round:r });
+      const isLast = (r === rounds-1 && i === EXERCISES.length-1);
+      if(!isLast) sequence.push({ type:'rest', dur:TRANSITION, round:r });
+    });
+  }
+}
+
+function beep(freq=880, len=0.12){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = freq;
+    o.type = 'sine';
+    g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + len);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + len);
+  }catch(e){}
+}
+
+function clearCurrentHighlight(){
+  document.querySelectorAll('.ex-row').forEach(r => r.classList.remove('current'));
+}
+
+function updateRing(){
+  const step = sequence[seqPos];
+  if(!step) return;
+  const frac = secLeft / step.dur;
+  ringFg.style.strokeDashoffset = CIRC * frac;
+  ringFg.classList.toggle('rest', step.type === 'rest');
+  ringCount.textContent = secLeft;
+
+  clearCurrentHighlight();
+  if(step.type === 'ex'){
+    const ex = EXERCISES[step.idx];
+    ringIcon.innerHTML = `<svg viewBox="0 0 64 64" width="34" height="34">${ex.icon}</svg>`;
+    ringLabel.textContent = `Round ${step.round+1} of ${rounds}`;
+    document.getElementById('exrow-'+step.idx).classList.add('current');
+    const nextStep = sequence[seqPos+1];
+    if(nextStep && nextStep.type==='rest'){
+      const after = sequence[seqPos+2];
+      upNext.innerHTML = after ? `Next: <b>${EXERCISES[after.idx].name}</b>` : `Last move — nearly there`;
+    } else {
+      upNext.innerHTML = `Circuit complete after this`;
+    }
+  } else {
+    ringIcon.innerHTML = '';
+    ringLabel.textContent = 'Get ready';
+    const next = sequence[seqPos+1];
+    upNext.innerHTML = next ? `Coming up: <b>${EXERCISES[next.idx].name}</b>` : '';
+  }
+  renderDots(seqPos, rounds, sequence[seqPos].round+1);
+}
+
+function tick(){
+  secLeft--;
+  if(secLeft <= 0){
+    advanceStep();
+  } else {
+    if(secLeft <= 3) beep(660, 0.08);
+    updateRing();
+  }
+}
+
+function advanceStep(){
+  seqPos++;
+  if(seqPos >= sequence.length){
+    finishCircuit();
+    return;
+  }
+  beep(sequence[seqPos].type === 'ex' ? 990 : 550, 0.14);
+  secLeft = sequence[seqPos].dur;
+  updateRing();
+}
+
+function startTimer(){
+  if(sequence.length === 0) buildSequence();
+  running = true; paused = false;
+  btnStart.disabled = true; btnPause.disabled = false; btnSkip.disabled = false;
+  btnPause.textContent = 'Pause';
+  secLeft = sequence[seqPos].dur;
+  updateRing();
+  beep(990, 0.14);
+  intervalId = setInterval(tick, 1000);
+}
+
+btnStart.onclick = () => {
+  if(sequence.length === 0){ seqPos = 0; }
+  startTimer();
+};
+
+btnPause.onclick = () => {
+  if(!running) return;
+  paused = !paused;
+  if(paused){
+    clearInterval(intervalId);
+    btnPause.textContent = 'Resume';
+  } else {
+    intervalId = setInterval(tick, 1000);
+    btnPause.textContent = 'Pause';
+  }
+};
+
+btnSkip.onclick = () => {
+  if(!running) return;
+  advanceStep();
+};
+
+btnReset.onclick = () => {
+  clearInterval(intervalId);
+  running = false; paused = false;
+  seqPos = 0; sequence = [];
+  btnStart.disabled = false; btnPause.disabled = true; btnSkip.disabled = true;
+  btnPause.textContent = 'Pause';
+  ringFg.style.strokeDashoffset = 0;
+  ringFg.classList.remove('rest');
+  ringCount.textContent = 'Ready';
+  ringLabel.textContent = `Round 1 of ${rounds}`;
+  ringIcon.innerHTML = '';
+  upNext.innerHTML = `Tap Start when you're up. First move: <b>${EXERCISES[0].name}</b>`;
+  clearCurrentHighlight();
+  renderDots(0, rounds, 1);
+};
+
+function finishCircuit(){
+  clearInterval(intervalId);
+  running = false;
+  btnStart.disabled = false; btnPause.disabled = true; btnSkip.disabled = true;
+  ringCount.textContent = 'Done';
+  ringLabel.textContent = 'Circuit complete';
+  ringIcon.innerHTML = '';
+  ringFg.style.strokeDashoffset = 0;
+  upNext.innerHTML = `Nice work — that's today logged.`;
+  clearCurrentHighlight();
+  beep(1200, 0.2);
+  setTimeout(()=>beep(1500,0.25), 180);
+  renderDots(sequence.length, rounds, rounds);
+  logToday();
+}
+
+/* ---------- Persistence: streak + weekly log ---------- */
+function todayKey(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+async function logToday(){
+  try{
+    let log = [];
+    try{
+      const raw = localStorage.getItem('routine-log');
+      log = raw ? JSON.parse(raw) : [];
+    }catch(e){ log = []; }
+    const key = todayKey();
+    if(!log.includes(key)) log.push(key);
+    localStorage.setItem('routine-log', JSON.stringify(log));
+    renderStreak(log);
+  }catch(e){
+    console.error('Could not save log', e);
+  }
+}
+
+function computeStreak(log){
+  const set = new Set(log);
+  let streak = 0;
+  let d = new Date();
+  while(true){
+    const key = d.toISOString().slice(0,10);
+    if(set.has(key)){
+      streak++;
+      d.setDate(d.getDate()-1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderStreak(log){
+  const set = new Set(log);
+  document.getElementById('streakNum').textContent = computeStreak(log);
+  const strip = document.getElementById('weekStrip');
+  strip.innerHTML = '';
+  const labels = ['S','M','T','W','T','F','S'];
+  const today = new Date();
+  const days = [];
+  for(let i=6; i>=0; i--){
+    const d = new Date(today);
+    d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+  days.forEach(d => {
+    const key = d.toISOString().slice(0,10);
+    const chip = document.createElement('div');
+    chip.className = 'day-chip' + (set.has(key) ? ' hit' : '');
+    chip.textContent = labels[d.getDay()];
+    strip.appendChild(chip);
+  });
+}
+
+async function loadLog(){
+  try{
+    const raw = localStorage.getItem('routine-log');
+    const log = raw ? JSON.parse(raw) : [];
+    renderStreak(log);
+  }catch(e){
+    renderStreak([]);
+  }
+}
+
+/* ---------- Init ---------- */
+renderDots(0, rounds, 1);
+loadLog();
+
+/* ---------- PWA: register service worker ---------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.log('SW registration skipped:', e));
+  });
+}
+</script>
+</body>
+</html>
