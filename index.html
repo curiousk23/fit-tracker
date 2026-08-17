@@ -99,6 +99,15 @@
 
   footer{margin-top:36px; font-size:12.5px; color:var(--muted); text-align:center; line-height:1.6;}
   .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+  /* --- Sound toggles --- */
+  .sound-row{display:flex; align-items:center; justify-content:center; gap:16px; margin:14px 0 0; font-size:13px; color:var(--muted);}
+  .sound-toggle{display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;}
+  .sound-toggle input{display:none;}
+  .toggle-track{width:34px; height:18px; border-radius:9px; background:var(--line); position:relative; transition:background .2s;}
+  .toggle-track::after{content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:var(--muted); transition:transform .2s, background .2s;}
+  .sound-toggle input:checked + .toggle-track{background:var(--amber);}
+  .sound-toggle input:checked + .toggle-track::after{transform:translateX(16px); background:#1B1408;}
+
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
 </style>
 </head>
@@ -149,6 +158,11 @@
     </div>
 
     <div class="progress-dots" id="progressDots"></div>
+
+    <div class="sound-row">
+      <label class="sound-toggle"><input type="checkbox" id="toggleVoice" checked><span class="toggle-track"></span> Voice</label>
+      <label class="sound-toggle"><input type="checkbox" id="toggleAmbient"><span class="toggle-track"></span> Ambient</label>
+    </div>
   </div>
 
   <!-- STREAK -->
@@ -278,6 +292,78 @@ function beep(freq=880, len=0.12){
   }catch(e){}
 }
 
+/* ---------- Voice cues (speechSynthesis) ---------- */
+const toggleVoice = document.getElementById('toggleVoice');
+const toggleAmbient = document.getElementById('toggleAmbient');
+
+function speak(text){
+  if(!toggleVoice.checked) return;
+  try{
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.05;
+    u.pitch = 1.0;
+    u.volume = 0.9;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- Ambient sound engine ---------- */
+let ambientNodes = null;
+
+function startAmbient(){
+  if(!toggleAmbient.checked) return;
+  if(ambientNodes) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = audioCtx.createGain();
+    master.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    master.connect(audioCtx.destination);
+
+    // warm pad: two detuned oscillators
+    const o1 = audioCtx.createOscillator();
+    const o2 = audioCtx.createOscillator();
+    o1.type = 'sine'; o1.frequency.value = 110;
+    o2.type = 'triangle'; o2.frequency.value = 165; o2.detune.value = 8;
+    const padGain = audioCtx.createGain();
+    padGain.gain.value = 0.5;
+    o1.connect(padGain); o2.connect(padGain);
+    padGain.connect(master);
+    o1.start(); o2.start();
+
+    // subtle filtered noise for texture
+    const bufLen = audioCtx.sampleRate * 2;
+    const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i=0; i<bufLen; i++) data[i] = Math.random()*2-1;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buf; noise.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 300; filter.Q.value = 1;
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.value = 0.3;
+    noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(master);
+    noise.start();
+
+    ambientNodes = { master, o1, o2, noise };
+  }catch(e){}
+}
+
+function stopAmbient(){
+  if(!ambientNodes) return;
+  try{
+    ambientNodes.o1.stop(); ambientNodes.o2.stop(); ambientNodes.noise.stop();
+    ambientNodes.master.disconnect();
+  }catch(e){}
+  ambientNodes = null;
+}
+
+toggleAmbient.addEventListener('change', () => {
+  if(toggleAmbient.checked && running && !paused) startAmbient();
+  else stopAmbient();
+});
+
 function clearCurrentHighlight(){
   document.querySelectorAll('.ex-row').forEach(r => r.classList.remove('current'));
 }
@@ -328,8 +414,15 @@ function advanceStep(){
     finishCircuit();
     return;
   }
-  beep(sequence[seqPos].type === 'ex' ? 990 : 550, 0.14);
-  secLeft = sequence[seqPos].dur;
+  const step = sequence[seqPos];
+  beep(step.type === 'ex' ? 990 : 550, 0.14);
+  if(step.type === 'ex'){
+    speak(EXERCISES[step.idx].name);
+  } else {
+    const next = sequence[seqPos+1];
+    if(next) speak('Rest. Next up: ' + EXERCISES[next.idx].name);
+  }
+  secLeft = step.dur;
   updateRing();
 }
 
@@ -341,6 +434,8 @@ function startTimer(){
   secLeft = sequence[seqPos].dur;
   updateRing();
   beep(990, 0.14);
+  speak('Let\'s go. ' + EXERCISES[sequence[seqPos].idx].name);
+  startAmbient();
   intervalId = setInterval(tick, 1000);
 }
 
@@ -354,9 +449,11 @@ btnPause.onclick = () => {
   paused = !paused;
   if(paused){
     clearInterval(intervalId);
+    stopAmbient();
     btnPause.textContent = 'Resume';
   } else {
     intervalId = setInterval(tick, 1000);
+    startAmbient();
     btnPause.textContent = 'Pause';
   }
 };
@@ -368,6 +465,7 @@ btnSkip.onclick = () => {
 
 btnReset.onclick = () => {
   clearInterval(intervalId);
+  stopAmbient();
   running = false; paused = false;
   seqPos = 0; sequence = [];
   btnStart.disabled = false; btnPause.disabled = true; btnSkip.disabled = true;
@@ -384,6 +482,8 @@ btnReset.onclick = () => {
 
 function finishCircuit(){
   clearInterval(intervalId);
+  stopAmbient();
+  speak('Circuit complete. Nice work.');
   running = false;
   btnStart.disabled = false; btnPause.disabled = true; btnSkip.disabled = true;
   ringCount.textContent = 'Done';
