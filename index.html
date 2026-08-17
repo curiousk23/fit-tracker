@@ -35,8 +35,13 @@
   .lede{color:var(--muted); font-size:15.5px; line-height:1.6; max-width:60ch;}
   .lede b{color:var(--text); font-weight:600;}
 
-  .why{margin-top:28px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px;}
-  .why h2{font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600; margin-bottom:10px;}
+  .why{margin-top:28px; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .why-toggle{display:flex; align-items:center; justify-content:space-between; padding:16px 24px; cursor:pointer; user-select:none; background:none; border:none; width:100%; color:inherit; font:inherit;}
+  .why-toggle h2{font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600; margin:0;}
+  .why-toggle .why-chevron{color:var(--muted); transition:transform .2s; flex-shrink:0;}
+  .why.open .why-toggle .why-chevron{transform:rotate(180deg);}
+  .why-body{max-height:0; overflow:hidden; transition:max-height .35s ease, padding .35s ease; padding:0 24px;}
+  .why.open .why-body{max-height:400px; padding:0 24px 20px;}
   .why p{color:var(--muted); font-size:14.5px; line-height:1.65; margin-bottom:10px;}
   .why p:last-child{margin-bottom:0;}
   .why .tag{color:var(--coral); font-weight:600;}
@@ -135,11 +140,16 @@
   <h1>Morning Activation<br>Circuit</h1>
   <p class="lede">Eight moves, one loop. <b>Mobility → cardio → push → squat → hinge → anti-rotation → anti-extension.</b> Built to wake the whole system up without taxing it — this isn't your training session, it's what makes the training session (and the rest of your day) go better.</p>
 
-  <div class="why">
-    <h2>Why this order, why these moves</h2>
-    <p>Cold joints going straight into fast movement is where niggles start — so it opens with <b>cat-cow</b> to unlock a stiff-from-sleeping spine, then <b>high knees</b> and <b>mountain climbers</b> to actually raise your heart rate and prime the nervous system.</p>
-    <p>The middle covers the three patterns a body needs daily: a <b>push</b> (press-ups), a <b>squat</b>, and a <b>hip hinge</b> (glute bridge) — most bodyweight routines skip the hinge entirely, which quietly under-trains the glutes and hamstrings that should be doing the work your lower back gets stuck compensating for.</p>
-    <p><span class="tag">Lower-back conscious:</span> <b>bird-dog</b> and <b>glute bridge</b> are in here specifically for that — bird-dog builds anti-rotation control and glute activation without any spinal loading, and the bridge strengthens the posterior chain that protects the back during everything else you do. Plank finishes it off with static anti-extension core, the one thing your original list already had right.</p>
+  <div class="why" id="whySection">
+    <button class="why-toggle" onclick="document.getElementById('whySection').classList.toggle('open')">
+      <h2>Why this order, why these moves</h2>
+      <svg class="why-chevron" width="16" height="16" viewBox="0 0 16 16"><path d="M4 6 L8 10 L12 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </button>
+    <div class="why-body">
+      <p>Cold joints going straight into fast movement is where niggles start — so it opens with <b>cat-cow</b> to unlock a stiff-from-sleeping spine, then <b>high knees</b> and <b>mountain climbers</b> to actually raise your heart rate and prime the nervous system.</p>
+      <p>The middle covers the three patterns a body needs daily: a <b>push</b> (press-ups), a <b>squat</b>, and a <b>hip hinge</b> (glute bridge) — most bodyweight routines skip the hinge entirely, which quietly under-trains the glutes and hamstrings that should be doing the work your lower back gets stuck compensating for.</p>
+      <p><span class="tag">Lower-back conscious:</span> <b>bird-dog</b> and <b>glute bridge</b> are in here specifically for that — bird-dog builds anti-rotation control and glute activation without any spinal loading, and the bridge strengthens the posterior chain that protects the back during everything else you do. Plank finishes it off with static anti-extension core, the one thing your original list already had right.</p>
+    </div>
   </div>
 
   <!-- TIMER -->
@@ -359,7 +369,7 @@ const voiceCache = {};
 
 function preloadVoice(key){
   if(voiceCache[key]) return;
-  const a = new Audio('audio/' + key + '.m4a');
+  const a = new Audio('audio/' + key + '.mp3');
   a.preload = 'auto';
   voiceCache[key] = a;
 }
@@ -385,7 +395,7 @@ function speak(clipKey){
 }
 
 /* ---------- Ambient sound (lo-fi loop) ---------- */
-const ambientAudio = new Audio('audio/ambient-loop.m4a');
+const ambientAudio = new Audio('audio/kulakovka-chill-hip-hop-298922.mp3');
 ambientAudio.loop = true;
 ambientAudio.volume = 0.25;
 ambientAudio.preload = 'auto';
