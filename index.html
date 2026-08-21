@@ -381,7 +381,7 @@ function preloadAllVoices(){
   voicesPreloaded = true;
   VOICE_KEYS.forEach(k => { preloadVoice('go-' + k); preloadVoice('rest-' + k); });
   preloadVoice('complete');
-  preloadVoice('countdown-15');
+  preloadVoice('countdown-10');
 }
 
 function speak(clipKey){
@@ -464,7 +464,7 @@ function tick(){
   if(secLeft <= 0){
     advanceStep();
   } else {
-    if(secLeft === 15 && sequence[seqPos].type === 'ex') speak('countdown-15');
+    if(secLeft === 10 && sequence[seqPos].type === 'ex') speak('countdown-10');
     if(secLeft <= 3) beep(660, 0.08);
     updateRing();
   }
