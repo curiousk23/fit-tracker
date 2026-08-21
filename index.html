@@ -391,6 +391,9 @@ function speak(clipKey){
     const a = voiceCache[clipKey];
     a.currentTime = 0;
     a.volume = 1.0;
+    // Duck ambient while voice plays
+    ambientAudio.volume = 0.04;
+    a.onended = () => { ambientAudio.volume = 0.1; };
     a.play().catch(()=>{});
   }catch(e){}
 }
@@ -398,7 +401,7 @@ function speak(clipKey){
 /* ---------- Ambient sound (lo-fi loop) ---------- */
 const ambientAudio = new Audio('audio/kulakovka-chill-hip-hop-298922.mp3');
 ambientAudio.loop = true;
-ambientAudio.volume = 0.15;
+ambientAudio.volume = 0.1;
 ambientAudio.preload = 'auto';
 
 function startAmbient(){
