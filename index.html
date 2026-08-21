@@ -369,7 +369,7 @@ const voiceCache = {};
 
 function preloadVoice(key){
   if(voiceCache[key]) return;
-  const a = new Audio('audio/' + key + '.mp3');
+  const a = new Audio('audio/' + key + '.wav');
   a.preload = 'auto';
   voiceCache[key] = a;
 }
